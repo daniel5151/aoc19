@@ -1,5 +1,6 @@
 use crate::DynResult;
 
+#[derive(Debug, Clone)]
 struct IntCode {
     init_mem: Vec<usize>,
     mem: Vec<usize>,
@@ -203,18 +204,25 @@ pub fn q1(_args: &[String]) -> DynResult<()> {
 /// Find the input _noun_ and _verb_ that cause the program to produce the
 /// output `19690720`. _What is `100 * noun + verb`?_ (For example, if `noun=12`
 /// and `verb=2`, the answer would be `1202`.)
-pub fn q2(_args: &[String]) -> DynResult<()> {
+pub fn q2(args: &[String]) -> DynResult<()> {
     let mem = std::fs::read_to_string("./inputs/2.txt")?
         .split(',')
         .map(|s| s.parse::<usize>())
         .collect::<Result<Vec<usize>, _>>()?;
+
+    if let Some(rayon) = args.get(0) {
+        if rayon == "rayon" {
+            return q2_rayon(mem);
+        } else {
+            return Err("Invalid argument".into());
+        }
+    }
+
+    // standard, non-multithreaded implementation
     let len = mem.len();
-
     let mut intcode = IntCode::new(mem);
-
     for noun in 0..len {
         for verb in 0..len {
-            println!("Testing ({}, {})", noun, verb);
             intcode.reset(noun, verb);
             let res = intcode.run();
 
@@ -223,6 +231,37 @@ pub fn q2(_args: &[String]) -> DynResult<()> {
                 return Ok(());
             }
         }
+    }
+
+    Ok(())
+}
+
+// multithreaded implementation
+fn q2_rayon(mem: Vec<usize>) -> DynResult<()> {
+    use rayon::prelude::*;
+
+    let pairs = (0..mem.len())
+        .flat_map(|noun| (0..mem.len()).map(move |verb| (noun, verb)))
+        .collect::<Vec<_>>();
+
+    let intcode = IntCode::new(mem);
+
+    let answer = pairs
+        .par_iter()
+        .map_init(
+            || intcode.clone(),
+            |intcode, (noun, verb)| {
+                intcode.reset(*noun, *verb);
+                (intcode.run(), (noun, verb))
+            },
+        )
+        .find_any(|(ans, _)| *ans == 19690720)
+        .map(|(_, pair)| pair);
+
+    if let Some((noun, verb)) = answer {
+        println!("Answer: {}", 100 * noun + verb);
+    } else {
+        return Err("Couldn't find the answer".into());
     }
 
     Ok(())
