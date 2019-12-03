@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
 use crate::DynResult;
 
 fn req_fuel(mass: usize) -> usize {
@@ -41,11 +38,8 @@ fn req_fuel(mass: usize) -> usize {
 ///
 /// _What is the sum of the fuel requirements_ for all of the modules on your
 /// spacecraft?
-pub fn q1(_args: &[String]) -> DynResult<()> {
-    let reader = BufReader::new(File::open("./inputs/1.txt")?);
-
-    let answer = reader.lines().try_fold(0, |a, ln| -> DynResult<_> {
-        let ln = ln?;
+pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+    let answer = input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
         let mass = ln.parse::<usize>()?;
         Ok(a + req_fuel(mass))
     })?;
@@ -95,11 +89,8 @@ fn fuel_fuel(fuel: usize) -> usize {
 /// spacecraft when also taking into account the mass of the added fuel?
 /// (Calculate the fuel requirements for each module separately, then add them
 /// all up at the end.)
-pub fn q2(_args: &[String]) -> DynResult<()> {
-    let reader = BufReader::new(File::open("./inputs/1.txt")?);
-
-    let answer = reader.lines().try_fold(0, |a, ln| -> DynResult<_> {
-        let ln = ln?;
+pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+    let answer = input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
         let mass = ln.parse::<usize>()?;
         let fuel = req_fuel(mass);
 

@@ -53,8 +53,8 @@ impl std::str::FromStr for PathChunk {
     }
 }
 
-fn parse_input(file_path: &str) -> DynResult<(Vec<PathChunk>, Vec<PathChunk>)> {
-    let mut wires = std::fs::read_to_string(file_path)?
+fn parse_input(input: String) -> DynResult<(Vec<PathChunk>, Vec<PathChunk>)> {
+    let mut wires = input
         .split('\n')
         .map(|s| {
             s.split(',')
@@ -133,8 +133,8 @@ fn parse_input(file_path: &str) -> DynResult<(Vec<PathChunk>, Vec<PathChunk>)> {
 ///
 /// _What is the Manhattan distance_ from the central port to the closest
 /// intersection?
-pub fn q1(_args: &[String]) -> DynResult<()> {
-    let (w1, w2) = parse_input("./inputs/3.txt")?;
+pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+    let (w1, w2) = parse_input(input)?;
 
     // let's just brute force it wheeee
 
@@ -218,8 +218,8 @@ pub fn q1(_args: &[String]) -> DynResult<()> {
 ///
 /// _What is the fewest combined steps the wires must take to reach an
 /// intersection?_
-pub fn q2(_args: &[String]) -> DynResult<()> {
-    let (w1, w2) = parse_input("./inputs/3.txt")?;
+pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+    let (w1, w2) = parse_input(input)?;
 
     // ((x, y), step)
     let mut w1_points: HashMap<(i32, i32), usize> = HashMap::new();

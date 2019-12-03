@@ -142,8 +142,8 @@ impl IntCode {
 /// program_, replace position `1` with the value `12` and replace position `2`
 /// with the value `2`. _What value is left at position `0`_ after the program
 /// halts?
-pub fn q1(_args: &[String]) -> DynResult<()> {
-    let mem = std::fs::read_to_string("./inputs/2.txt")?
+pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+    let mem = input
         .split(',')
         .map(|s| s.parse::<usize>())
         .collect::<std::result::Result<Vec<usize>, _>>()?;
@@ -204,8 +204,8 @@ pub fn q1(_args: &[String]) -> DynResult<()> {
 /// Find the input _noun_ and _verb_ that cause the program to produce the
 /// output `19690720`. _What is `100 * noun + verb`?_ (For example, if `noun=12`
 /// and `verb=2`, the answer would be `1202`.)
-pub fn q2(args: &[String]) -> DynResult<()> {
-    let mem = std::fs::read_to_string("./inputs/2.txt")?
+pub fn q2(input: String, args: &[String]) -> DynResult<()> {
+    let mem = input
         .split(',')
         .map(|s| s.parse::<usize>())
         .collect::<Result<Vec<usize>, _>>()?;
