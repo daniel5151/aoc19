@@ -7,6 +7,7 @@ pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub mod day1;
 pub mod day2;
 pub mod day3;
+pub mod day4;
 
 fn main() -> DynResult<()> {
     let args = std::env::args().collect::<Vec<String>>();
@@ -58,6 +59,7 @@ fn main() -> DynResult<()> {
         "1" => day!(day1),
         "2" => day!(day2),
         "3" => day!(day3),
+        "4" => day!(day4),
         _ => return Err("Unknown day".into()),
     };
 
