@@ -4,11 +4,13 @@ use std::path::Path;
 
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub mod day1;
-pub mod day2;
-pub mod day3;
-pub mod day4;
-pub mod day5;
+mod day1;
+mod day2;
+mod day3;
+mod day4;
+mod day5;
+
+mod intcode;
 
 fn main() -> DynResult<()> {
     let args = std::env::args().collect::<Vec<String>>();
