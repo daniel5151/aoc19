@@ -103,8 +103,7 @@ use crate::intcode::IntCode;
 pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
     let mut intcode = IntCode::new(input)?;
     intcode.reset();
-    intcode.run();
-
+    intcode.run_with_input("1".as_ref())?;
     Ok(())
 }
 
@@ -182,7 +181,6 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
     let mut intcode = IntCode::new(input)?;
     intcode.reset();
-    intcode.run();
-
+    intcode.run_with_input("5".as_ref())?;
     Ok(())
 }

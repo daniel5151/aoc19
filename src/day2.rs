@@ -101,7 +101,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
     let mut intcode = IntCode::new(input)?;
     intcode.write_mem(1, 12).unwrap();
     intcode.write_mem(2, 2).unwrap();
-    intcode.run();
+    intcode.run()?;
     println!("{}", intcode.read_mem(0).unwrap());
 
     Ok(())
@@ -156,15 +156,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 /// Find the input _noun_ and _verb_ that cause the program to produce the
 /// output `19690720`. _What is `100 * noun + verb`?_ (For example, if `noun=12`
 /// and `verb=2`, the answer would be `1202`.)
-pub fn q2(input: String, args: &[String]) -> DynResult<()> {
-    if let Some(rayon) = args.get(0) {
-        if rayon == "rayon" {
-            return q2_rayon(input);
-        } else {
-            return Err("Invalid argument".into());
-        }
-    }
-
+pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
     // standard, non-multithreaded implementation
     let mut intcode = IntCode::new(input)?;
     let len = intcode.mem_len();
@@ -173,48 +165,13 @@ pub fn q2(input: String, args: &[String]) -> DynResult<()> {
             intcode.reset();
             intcode.write_mem(1, noun as isize).unwrap();
             intcode.write_mem(2, verb as isize).unwrap();
-            intcode.run();
+            intcode.run()?;
             let res = intcode.read_mem(0).unwrap();
             if res == 19690720 {
                 println!("{}", 100 * noun + verb);
                 return Ok(());
             }
         }
-    }
-
-    Ok(())
-}
-
-// multithreaded implementation
-fn q2_rayon(input: String) -> DynResult<()> {
-    use rayon::prelude::*;
-
-    let intcode = IntCode::new(input)?;
-    let len = intcode.mem_len();
-
-    let pairs = (0..len)
-        .flat_map(|noun| (0..len).map(move |verb| (noun, verb)))
-        .collect::<Vec<_>>();
-
-    let answer = pairs
-        .par_iter()
-        .map_init(
-            || intcode.clone(),
-            |intcode, (noun, verb)| {
-                intcode.reset();
-                intcode.write_mem(1, *noun as isize).unwrap();
-                intcode.write_mem(2, *verb as isize).unwrap();
-                intcode.run();
-                (intcode.read_mem(0).unwrap(), (noun, verb))
-            },
-        )
-        .find_any(|(ans, _)| *ans == 19690720)
-        .map(|(_, pair)| pair);
-
-    if let Some((noun, verb)) = answer {
-        println!("{}", 100 * noun + verb);
-    } else {
-        return Err("Couldn't find the answer".into());
     }
 
     Ok(())

@@ -1,6 +1,34 @@
-use crate::DynResult;
+use std::error::Error as StdError;
+use std::fmt::{self, Debug, Display};
+use std::io::{self, BufRead, Write};
 
-use std::io::Read;
+fn read_num(r: &mut impl BufRead) -> Result<isize, IntCodeError> {
+    let mut buf = String::new();
+    r.read_to_string(&mut buf).map_err(IntCodeError::Io)?;
+    buf.trim()
+        .parse::<isize>()
+        .map_err(|_| IntCodeError::ParseInput)
+}
+
+#[derive(Debug)]
+pub enum IntCodeError {
+    ParseMem,
+    ParseInput,
+    Io(io::Error),
+}
+
+impl Display for IntCodeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use self::IntCodeError::*;
+        match self {
+            ParseMem => write!(f, "Failed to parse initial memory string"),
+            ParseInput => write!(f, "Failed to parse input value"),
+            Io(e) => write!(f, "I/O error: {}", e),
+        }
+    }
+}
+
+impl StdError for IntCodeError {}
 
 #[derive(Debug, Clone)]
 pub struct IntCode {
@@ -10,11 +38,12 @@ pub struct IntCode {
 }
 
 impl IntCode {
-    pub fn new(input: String) -> DynResult<IntCode> {
+    pub fn new(input: String) -> Result<IntCode, IntCodeError> {
         let mem = input
             .split(',')
             .map(|s| s.parse::<isize>())
-            .collect::<std::result::Result<Vec<isize>, _>>()?;
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|_| IntCodeError::ParseMem)?;
 
         Ok(IntCode {
             init_mem: mem.clone(),
@@ -40,8 +69,24 @@ impl IntCode {
         self.pc = 0;
     }
 
-    /// Returns the final value at memory location 0
-    pub fn run(&mut self) {
+    /// Runs the intcode interpretter using stdin and stdout
+    pub fn run(&mut self) -> Result<(), IntCodeError> {
+        self.run_with_io(std::io::stdin().lock(), std::io::stdout().lock())
+    }
+
+    /// Runs the intcode interpretter using the specified input stream,
+    /// outputting to stdout
+    pub fn run_with_input(&mut self, input: impl BufRead) -> Result<(), IntCodeError> {
+        self.run_with_io(input, std::io::stdout().lock())
+    }
+
+    /// Runs the intcode interpretter using the specified input and output
+    /// streams
+    pub fn run_with_io(
+        &mut self,
+        mut input: impl BufRead,
+        mut output: impl Write,
+    ) -> Result<(), IntCodeError> {
         loop {
             let instr = self.mem[self.pc];
             let opcode = instr % 100;
@@ -54,8 +99,6 @@ impl IntCode {
                     _ => unimplemented!(),
                 }
             };
-
-            let mut input = String::new();
 
             match opcode {
                 99 => break,
@@ -73,12 +116,9 @@ impl IntCode {
                 }
                 3 => {
                     let dst = addr(1) as usize;
-                    self.mem[dst] = {
-                        // FIXME
-                        std::io::stdin().read_to_string(&mut input).unwrap();
-                        input.trim().parse::<isize>().unwrap()
-                    }
+                    self.mem[dst] = read_num(&mut input)?;
                 }
+                4 => writeln!(output, "{}", self.mem[addr(1)]).map_err(IntCodeError::Io)?,
                 5 => {
                     let a = addr(1);
                     let b = addr(2);
@@ -107,7 +147,6 @@ impl IntCode {
                     let dst = addr(3) as usize;
                     self.mem[dst] = (self.mem[a] == self.mem[b]) as isize;
                 }
-                4 => println!("{}", self.mem[addr(1)]),
                 _ => panic!("unexpected opcode"),
             }
 
@@ -118,5 +157,7 @@ impl IntCode {
                 _ => unimplemented!(),
             };
         }
+
+        Ok(())
     }
 }
