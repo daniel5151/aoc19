@@ -1,6 +1,6 @@
-use std::error::Error as StdError;
-use std::fmt::{self, Debug, Display};
-use std::io::{self, BufRead, Write};
+use std::io::{BufRead, Write};
+
+pub use super::error::IntCodeError;
 
 fn read_num(r: &mut impl BufRead) -> Result<isize, IntCodeError> {
     let mut buf = String::new();
@@ -9,26 +9,6 @@ fn read_num(r: &mut impl BufRead) -> Result<isize, IntCodeError> {
         .parse::<isize>()
         .map_err(|_| IntCodeError::ParseInput)
 }
-
-#[derive(Debug)]
-pub enum IntCodeError {
-    ParseMem,
-    ParseInput,
-    Io(io::Error),
-}
-
-impl Display for IntCodeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use self::IntCodeError::*;
-        match self {
-            ParseMem => write!(f, "Failed to parse initial memory string"),
-            ParseInput => write!(f, "Failed to parse input value"),
-            Io(e) => write!(f, "I/O error: {}", e),
-        }
-    }
-}
-
-impl StdError for IntCodeError {}
 
 #[derive(Debug, Clone)]
 pub struct IntCode {
@@ -41,7 +21,7 @@ impl IntCode {
     pub fn new(input: String) -> Result<IntCode, IntCodeError> {
         let mem = input
             .split(',')
-            .map(|s| s.parse::<isize>())
+            .map(|s| s.trim().parse::<isize>())
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|_| IntCodeError::ParseMem)?;
 
