@@ -171,8 +171,8 @@ pub fn q2(input: String, args: &[String]) -> DynResult<()> {
     for noun in 0..len {
         for verb in 0..len {
             intcode.reset();
-            intcode.write_mem(1, noun).unwrap();
-            intcode.write_mem(2, verb).unwrap();
+            intcode.write_mem(1, noun as isize).unwrap();
+            intcode.write_mem(2, verb as isize).unwrap();
             intcode.run();
             let res = intcode.read_mem(0).unwrap();
             if res == 19690720 {
@@ -202,8 +202,8 @@ fn q2_rayon(input: String) -> DynResult<()> {
             || intcode.clone(),
             |intcode, (noun, verb)| {
                 intcode.reset();
-                intcode.write_mem(1, *noun).unwrap();
-                intcode.write_mem(2, *verb).unwrap();
+                intcode.write_mem(1, *noun as isize).unwrap();
+                intcode.write_mem(2, *verb as isize).unwrap();
                 intcode.run();
                 (intcode.read_mem(0).unwrap(), (noun, verb))
             },
