@@ -29,6 +29,7 @@ days! {
     day3,
     day4,
     day5,
+    day6,
 }
 
 mod intcode;
@@ -44,8 +45,9 @@ fn main() -> DynResult<()> {
     let input_path = format!("./inputs/{}.txt", day);
     let input_path = Path::new(&input_path);
 
-    let input = std::fs::read_to_string(input_path)
+    let mut input = std::fs::read_to_string(input_path)
         .map_err(|e| format!("Could not open {}: {}", input_path.to_string_lossy(), e))?;
+    input.truncate(input.trim_end().len());
 
-    route_day(day, question, input, &args[2..])
+    route_day(day, question, input, &args[3..])
 }
