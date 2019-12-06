@@ -4,11 +4,32 @@ use std::path::Path;
 
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-mod day1;
-mod day2;
-mod day3;
-mod day4;
-mod day5;
+macro_rules! days {
+    ($($day:ident),* $(,)*) => {
+        $(mod $day;)*
+
+        fn route_day(day: &str, question: &str, input: String, other_args: &[String]) -> DynResult<()> {
+            let day = format!("day{}", day);
+
+            match day.as_str() {
+                $(stringify!($day) => match question {
+                    "1" => $day::q1(input, other_args),
+                    "2" => $day::q2(input, other_args),
+                    _ => Err("Unknown question".into()),
+                })*
+                _ => Err("Unknown day".into()),
+            }
+        }
+    };
+}
+
+days! {
+    day1,
+    day2,
+    day3,
+    day4,
+    day5,
+}
 
 mod intcode;
 
@@ -26,24 +47,5 @@ fn main() -> DynResult<()> {
     let input = std::fs::read_to_string(input_path)
         .map_err(|e| format!("Could not open {}: {}", input_path.to_string_lossy(), e))?;
 
-    macro_rules! day {
-        ($day:ident) => {
-            match question {
-                "1" => $day::q1(input, &args[2..])?,
-                "2" => $day::q2(input, &args[2..])?,
-                _ => return Err("Unknown question".into()),
-            }
-        };
-    }
-
-    match day {
-        "1" => day!(day1),
-        "2" => day!(day2),
-        "3" => day!(day3),
-        "4" => day!(day4),
-        "5" => day!(day5),
-        _ => return Err("Unknown day".into()),
-    };
-
-    Ok(())
+    route_day(day, question, input, &args[2..])
 }
