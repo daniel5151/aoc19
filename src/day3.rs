@@ -1,7 +1,31 @@
-use std::collections::HashMap;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::DynResult;
+
+macro_rules! munge_input {
+    ($input:ident) => {{
+        let input = &$input;
+
+        let mut wires = input
+            .split('\n')
+            .map(|s| {
+                s.split(',')
+                    .map(|s| s.parse::<PathChunk>())
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|_| "failed to parse input")?;
+
+        let w2 = wires.pop().ok_or_else(|| "second wire path unspecified")?;
+        let w1 = wires.pop().ok_or_else(|| "first wire path unspecified")?;
+
+        if !wires.is_empty() {
+            return Err("specified more than 2 wires".into());
+        }
+
+        (w1, w2)
+    }};
+}
 
 struct PathChunk {
     pub dir: Dir,
@@ -51,25 +75,6 @@ impl std::str::FromStr for PathChunk {
             dist: s[1..].parse().map_err(drop)?,
         })
     }
-}
-
-fn parse_input(input: String) -> DynResult<(Vec<PathChunk>, Vec<PathChunk>)> {
-    let mut wires = input
-        .split('\n')
-        .map(|s| {
-            s.split(',')
-                .map(|s| s.parse::<PathChunk>())
-                .collect::<Result<Vec<_>, _>>()
-        })
-        .collect::<std::result::Result<Vec<_>, _>>()
-        .map_err(|_| "failed to parse input")?;
-
-    let w2 = wires.pop().ok_or_else(|| "second wire path unspecified")?;
-    let w1 = wires.pop().ok_or_else(|| "first wire path unspecified")?;
-
-    assert!(wires.is_empty());
-
-    Ok((w1, w2))
 }
 
 /// ## --- Day 3: Crossed Wires ---
@@ -134,7 +139,7 @@ fn parse_input(input: String) -> DynResult<(Vec<PathChunk>, Vec<PathChunk>)> {
 /// _What is the Manhattan distance_ from the central port to the closest
 /// intersection?
 pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
-    let (w1, w2) = parse_input(input)?;
+    let (w1, w2) = munge_input!(input);
 
     // let's just brute force it wheeee
 
@@ -219,7 +224,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 /// _What is the fewest combined steps the wires must take to reach an
 /// intersection?_
 pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
-    let (w1, w2) = parse_input(input)?;
+    let (w1, w2) = munge_input!(input);
 
     // ((x, y), step)
     let mut w1_points: HashMap<(i32, i32), usize> = HashMap::new();

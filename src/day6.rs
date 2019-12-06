@@ -2,7 +2,23 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::DynResult;
 
-///
+macro_rules! munge_input {
+    ($input:ident) => {{
+        let input = &$input;
+        let pairs = input
+            .split('\n')
+            .map(|s| {
+                let mut c = s.splitn(2, ')');
+                (c.next().unwrap(), c.next().unwrap_or(""))
+            })
+            .collect::<Vec<_>>();
+        if pairs.iter().any(|(a, _)| a.is_empty()) {
+            return Err("Malformed input".into());
+        }
+        pairs
+    }};
+}
+
 /// ## --- Day 6: Universal Orbit Map ---
 ///
 /// You've landed at the Universal Orbit Map facility on Mercury. Because
@@ -77,20 +93,12 @@ use crate::DynResult;
 ///
 /// _What is the total number of direct and indirect orbits_ in your map data?
 pub fn q1(input: String, args: &[String]) -> DynResult<()> {
-    let pairs = input
-        .split('\n')
-        .map(|s| {
-            let mut c = s.splitn(2, ')');
-            (c.next().unwrap(), c.next().unwrap_or(""))
-        })
-        .collect::<Vec<_>>();
-    if pairs.iter().any(|(a, _)| a.is_empty()) {
-        return Err("Malformed input".into());
-    }
+    let input = munge_input!(input);
 
     let mut orbits: HashMap<&str, HashSet<&str>> = HashMap::new();
-    for (a, b) in pairs {
+    for (a, b) in input {
         orbits.entry(a).or_default().insert(b);
+        orbits.entry(b).or_default();
     }
 
     let checksum = match args.get(0).map(|s| s.as_str()) {
@@ -103,9 +111,7 @@ pub fn q1(input: String, args: &[String]) -> DynResult<()> {
             let mut checksum = 0;
             while let Some((planet, depth)) = s.pop() {
                 checksum += depth;
-                if let Some(os) = orbits.get(planet) {
-                    s.extend(os.iter().map(|o| (*o, depth + 1)));
-                }
+                s.extend(orbits[planet].iter().map(|o| (*o, depth + 1)));
             }
             checksum
         }
@@ -181,21 +187,12 @@ fn checksum(orbits: &HashMap<&str, HashSet<&str>>, root: &str, d: usize) -> usiz
 /// object `YOU` are orbiting to the object `SAN` is orbiting? (Between the
 /// objects they are orbiting - _not_ between `YOU` and `SAN`.)
 pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
-    let pairs = input
-        .split('\n')
-        .map(|s| {
-            let mut c = s.splitn(2, ')');
-            (c.next().unwrap(), c.next().unwrap_or(""))
-        })
-        .collect::<Vec<_>>();
-    if pairs.iter().any(|(a, _)| a.is_empty()) {
-        return Err("Malformed input".into());
-    }
+    let input = munge_input!(input);
 
-    let mut edges: HashMap<&str, HashSet<&str>> = HashMap::new();
-    for (a, b) in pairs {
-        edges.entry(a).or_default().insert(b);
-        edges.entry(b).or_default().insert(a);
+    let mut orbits: HashMap<&str, HashSet<&str>> = HashMap::new();
+    for (a, b) in input {
+        orbits.entry(a).or_default().insert(b);
+        orbits.entry(b).or_default().insert(a);
     }
 
     // basic BFS
@@ -208,7 +205,7 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
         }
 
         q.extend(
-            edges[planet]
+            orbits[planet]
                 .iter()
                 .filter(|p| **p != parent)
                 .map(|p| (*p, planet, hops + 1)),

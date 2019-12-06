@@ -1,9 +1,10 @@
 #![allow(clippy::unreadable_literal)]
 
-use std::path::Path;
+mod intcode;
 
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+// Utulity macro to make adding new days a breeze
 macro_rules! days {
     ($($day:ident),* $(,)*) => {
         $(mod $day;)*
@@ -32,8 +33,6 @@ days! {
     day6,
 }
 
-mod intcode;
-
 fn main() -> DynResult<()> {
     let args = std::env::args().collect::<Vec<String>>();
 
@@ -43,7 +42,7 @@ fn main() -> DynResult<()> {
     };
 
     let input_path = format!("./inputs/{}.txt", day);
-    let input_path = Path::new(&input_path);
+    let input_path = std::path::Path::new(&input_path);
 
     let mut input = std::fs::read_to_string(input_path)
         .map_err(|e| format!("Could not open {}: {}", input_path.to_string_lossy(), e))?;

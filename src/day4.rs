@@ -1,5 +1,15 @@
 use crate::DynResult;
 
+macro_rules! munge_input {
+    ($input:ident) => {{
+        let input = &$input;
+        let mut input = input.split('-');
+        let start = input.next().unwrap().parse::<usize>()?;
+        let end = input.next().unwrap().parse::<usize>()?;
+        (start, end)
+    }};
+}
+
 fn digits(val: usize) -> Vec<char> {
     val.to_string().chars().collect()
 }
@@ -51,9 +61,7 @@ fn has_run2(digits: &[char]) -> bool {
 /// _How many different passwords_ within the range given in your puzzle input
 /// meet these criteria?
 pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
-    let mut input = input.split('-');
-    let start = input.next().unwrap().parse::<usize>()?;
-    let end = input.next().unwrap().parse::<usize>()?;
+    let (start, end) = munge_input!(input);
 
     let ans = (start..=end)
         .map(digits)
@@ -79,14 +87,12 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 /// * `123_444_` no longer meets the criteria (the repeated `44` is part of a
 ///   larger group of `444`).
 /// * `111122` meets the criteria (even though `1` is repeated more than twice,
-///    it still contains a double `22`).
+///   it still contains a double `22`).
 ///
 /// _How many different passwords_ within the range given in your puzzle input
 /// meet all of the criteria?
 pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
-    let mut input = input.split('-');
-    let start = input.next().unwrap().parse::<usize>()?;
-    let end = input.next().unwrap().parse::<usize>()?;
+    let (start, end) = munge_input!(input);
 
     let ans = (start..=end)
         .map(digits)
