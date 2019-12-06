@@ -15,38 +15,16 @@ mod intcode;
 fn main() -> DynResult<()> {
     let args = std::env::args().collect::<Vec<String>>();
 
-    let (day, question) = match args.get(1) {
-        None => return Err("Must specify day and question (e.g: 1.1)".into()),
-        Some(q) => {
-            let mut q = q.split('.');
-            (
-                q.next().ok_or_else(|| "Must specify day")?,
-                q.next().ok_or_else(|| "Must specify question")?,
-            )
-        }
+    let (day, question) = match (args.get(1), args.get(2)) {
+        (None, _) | (_, None) => return Err("Must specify day and question (e.g: 3 1)".into()),
+        (Some(d), Some(q)) => (d.as_str(), q.as_str()),
     };
 
     let input_path = format!("./inputs/{}.txt", day);
     let input_path = Path::new(&input_path);
 
-    let input = if !input_path.exists() {
-        std::fs::create_dir_all("./inputs")?;
-
-        let cookie = std::fs::read_to_string("./cookie.txt")
-            .map_err(|e| format!("Could not find 'cookie.txt': {:?}", e))?;
-
-        eprintln!("Downloading input...");
-        let mut input = reqwest::blocking::Client::new()
-            .get(&format!("https://adventofcode.com/2019/day/{}/input", day))
-            .header(reqwest::header::COOKIE, cookie)
-            .send()?
-            .text()?;
-        std::fs::write(input_path, &input.trim())?;
-        input.truncate(input.len() - 1); // trim without reallocating
-        input
-    } else {
-        std::fs::read_to_string(input_path)?
-    };
+    let input = std::fs::read_to_string(input_path)
+        .map_err(|e| format!("Could not open {}: {}", input_path.to_string_lossy(), e))?;
 
     macro_rules! day {
         ($day:ident) => {
