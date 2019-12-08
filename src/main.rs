@@ -47,6 +47,7 @@ days! {
     day5,
     day6,
     day7,
+    day8,
 }
 
 fn main() -> DynResult<()> {
