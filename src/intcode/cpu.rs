@@ -12,9 +12,6 @@ pub struct Intcode {
 
     mem: Vec<isize>,
     pc: usize,
-
-    in_buf: VecDeque<isize>,
-    out_buf: VecDeque<isize>,
 }
 
 impl Intcode {
@@ -32,8 +29,6 @@ impl Intcode {
             reset_mem: mem.clone(),
             mem,
             pc: 0,
-            in_buf: VecDeque::new(),
-            out_buf: VecDeque::new(),
         })
     }
 
@@ -41,9 +36,6 @@ impl Intcode {
     pub fn reset(&mut self) {
         self.mem.copy_from_slice(&self.reset_mem);
         self.pc = 0;
-
-        self.in_buf.clear();
-        self.out_buf.clear();
     }
 
     /// Return the intcode machine's memory length
@@ -66,22 +58,12 @@ impl Intcode {
             .ok_or(Error::OobWrite)
     }
 
-    /// Get a mutable reference to the input buffer
-    pub fn input(&mut self) -> &mut VecDeque<isize> {
-        &mut self.in_buf
-    }
-
-    /// Get a mutable reference to the output buffer
-    pub fn output(&mut self) -> &mut VecDeque<isize> {
-        &mut self.out_buf
-    }
-
     /// Run the intcode interpreter without performing any I/O,
     /// returning an error if a read instruction is encountered
     pub fn run_headless(&mut self) -> Result<()> {
         while self.step(
             || Err("intcode cannot read input in headless mode".into()),
-            |_| (),
+            |_| Ok(()),
         )? {}
         Ok(())
     }
@@ -97,23 +79,34 @@ impl Intcode {
                 std::io::stdin().read_to_string(&mut buf)?;
                 Ok(buf.trim().parse::<isize>()?)
             },
-            |i| println!("{}", i),
+            |i| {
+                println!("{}", i);
+                Ok(())
+            },
         )? {}
         Ok(())
     }
 
-    /// Run the intcode interpreter to completion using the provided input
-    /// vector. Returns all output in a single output vector. Returns an error
-    /// if the input Vec runs out of elements.
-    pub fn run_to_completion(&mut self, mut input: Vec<isize>) -> Result<()> {
+    /// Run the intcode interpreter to completion using the provided input and
+    /// output buffers. Returns an error if the input vector runs out of
+    /// elements.
+    pub fn run_to_completion(
+        &mut self,
+        input: &mut Vec<isize>,
+        output: &mut Vec<isize>,
+    ) -> Result<()> {
         input.reverse();
+
         while self.step(
             || {
                 input
                     .pop()
                     .ok_or_else(|| "no more input in the input buffer".into())
             },
-            |_| (),
+            |i| {
+                output.push(i);
+                Ok(())
+            },
         )? {}
         Ok(())
     }
@@ -121,12 +114,19 @@ impl Intcode {
     /// Run the intcode interpreter with the provided input until the machine
     /// has outputted `n` values. If the machine halts, None is returned.
     /// Returns an error if the input VecDeque runs out of elements.
-    pub fn run_until_output(&mut self) -> Result<Option<isize>> {
+    pub fn run_until_output(&mut self, input: &mut VecDeque<isize>) -> Result<Option<isize>> {
         let mut output = None;
         loop {
             let running = self.step(
-                || Err("no more input in the input buffer".into()),
-                |i| output = Some(i),
+                || {
+                    input
+                        .pop_front()
+                        .ok_or_else(|| "no more input in the input buffer".into())
+                },
+                |i| {
+                    output = Some(i);
+                    Ok(())
+                },
             )?;
 
             if !running {
@@ -134,7 +134,6 @@ impl Intcode {
             }
 
             if let Some(output) = output {
-                assert!(self.out_buf.pop_front() == Some(output));
                 return Ok(Some(output));
             }
         }
@@ -144,8 +143,8 @@ impl Intcode {
     /// returning `false` is the machine is halted.
     pub fn step(
         &mut self,
-        mut get_input: impl FnMut() -> DynResult<isize>,
-        mut on_output: impl FnMut(isize),
+        mut input_fn: impl FnMut() -> DynResult<isize>,
+        mut output_fn: impl FnMut(isize) -> DynResult<()>,
     ) -> Result<(bool)> {
         let (instr, instr_len) = Instruction::decode(self.pc, &self.mem)?;
         self.pc += instr_len;
@@ -154,18 +153,8 @@ impl Intcode {
         match instr {
             Halt => return Ok(false),
             // 1 arg
-            ReadInt(dst) => {
-                self.mem[dst] = match self.in_buf.pop_front() {
-                    Some(v) => v,
-                    // last-ditch attempt to get some input from the user
-                    None => get_input().map_err(Error::InputError)?,
-                }
-            }
-            WriteInt(src) => {
-                let val = self.mem[src];
-                self.out_buf.push_back(val);
-                on_output(val)
-            }
+            ReadInt(dst) => self.mem[dst] = input_fn().map_err(Error::InputError)?,
+            WriteInt(src) => output_fn(self.mem[src]).map_err(Error::OutputError)?,
             // 2 arg
             Jnz(v, pc) => {
                 if self.mem[v] != 0 {

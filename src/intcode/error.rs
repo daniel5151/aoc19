@@ -6,6 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 pub enum Error {
     InputError(Box<dyn StdError>),
+    OutputError(Box<dyn StdError>),
     OobRead,
     OobWrite,
     InvalidAddrMode(usize),
@@ -22,6 +23,7 @@ impl Display for Error {
             InvalidAddrMode(v) => write!(f, "Encountered unknown addressing mode: {}", v),
             InvalidOpcode(v) => write!(f, "Encountered unknown opcode: {}", v),
             InputError(e) => write!(f, "Could not read input: {}", e),
+            OutputError(e) => write!(f, "Could not read output: {}", e),
             NegativeAddr => write!(f, "Cannot address negative address"),
             NegativeInstr => write!(f, "Cannot execute negative instruction"),
             ParseMem => write!(f, "Failed to parse initial memory string"),

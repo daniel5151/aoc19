@@ -98,10 +98,11 @@ use crate::prelude::*;
 ///
 /// After providing `1` to the only input instruction and passing all the tests,
 /// _what diagnostic code does the program produce?_
-pub fn q1(input: String, _args: &[String]) -> DynResult<String> {
+pub fn q1(input: String, _args: &[String]) -> DynResult<Vec<isize>> {
     let mut intcode = Intcode::new(input)?;
-    intcode.run_to_completion(vec![1])?;
-    Ok(format!("{:?}", intcode.output()))
+    let mut output = Vec::new();
+    intcode.run_to_completion(&mut vec![1], &mut output)?;
+    Ok(output)
 }
 
 /// ## --- Part Two ---
@@ -175,8 +176,9 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<String> {
 /// number, the _diagnostic code_.
 ///
 /// _What is the diagnostic code for system ID `5`?_
-pub fn q2(input: String, _args: &[String]) -> DynResult<String> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<Vec<isize>> {
     let mut intcode = Intcode::new(input)?;
-    intcode.run_to_completion(vec![5])?;
-    Ok(format!("{:?}", intcode.output()))
+    let mut output = Vec::new();
+    intcode.run_to_completion(&mut vec![5], &mut output)?;
+    Ok(output)
 }
