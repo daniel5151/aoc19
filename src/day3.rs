@@ -1,6 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use crate::DynResult;
+use crate::prelude::*;
 
 macro_rules! munge_input {
     ($input:ident) => {{
@@ -138,7 +136,7 @@ impl std::str::FromStr for PathChunk {
 ///
 /// _What is the Manhattan distance_ from the central port to the closest
 /// intersection?
-pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q1(input: String, _args: &[String]) -> DynResult<usize> {
     let (w1, w2) = munge_input!(input);
 
     // let's just brute force it wheeee
@@ -173,10 +171,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 
     match min_dist {
         None => Err("Two wires didn't intersect".into()),
-        Some(min_dist) => {
-            println!("{:?}", min_dist);
-            Ok(())
-        }
+        Some(min_dist) => Ok(min_dist as usize),
     }
 }
 
@@ -223,7 +218,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 ///
 /// _What is the fewest combined steps the wires must take to reach an
 /// intersection?_
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<usize> {
     let (w1, w2) = munge_input!(input);
 
     // ((x, y), step)
@@ -261,9 +256,6 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
 
     match min_steps {
         None => Err("Two wires didn't intersect".into()),
-        Some(min_steps) => {
-            println!("{:?}", min_steps);
-            Ok(())
-        }
+        Some(min_steps) => Ok(min_steps),
     }
 }

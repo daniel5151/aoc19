@@ -1,8 +1,21 @@
 #![allow(clippy::unreadable_literal)]
 
-mod intcode;
+pub mod intcode;
 
+/// Catch-all error type (works with anything that implements std::error::Error)
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+pub mod prelude {
+    // useful stdlib stuff
+    pub use std::collections::*;
+
+    // useful external libraries
+    pub use itertools::Itertools;
+
+    // useful AOC things
+    pub use crate::intcode::Intcode;
+    pub use crate::DynResult;
+}
 
 // Utulity macro to make adding new days a breeze
 macro_rules! days {
@@ -14,12 +27,14 @@ macro_rules! days {
 
             match day.as_str() {
                 $(stringify!($day) => match question {
-                    "1" => $day::q1(input, other_args),
-                    "2" => $day::q2(input, other_args),
-                    _ => Err("Unknown question".into()),
+                    "1" => println!("Answer: {:?}", $day::q1(input, other_args)?),
+                    "2" => println!("Answer: {:?}", $day::q2(input, other_args)?),
+                    _ => return Err("Unknown question".into()),
                 })*
-                _ => Err("Unknown day".into()),
+                _ => return Err("Unknown day".into()),
             }
+
+            Ok(())
         }
     };
 }
@@ -31,6 +46,7 @@ days! {
     day4,
     day5,
     day6,
+    day7,
 }
 
 fn main() -> DynResult<()> {

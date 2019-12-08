@@ -1,6 +1,4 @@
-use crate::DynResult;
-
-use crate::intcode::IntCode;
+use crate::prelude::*;
 
 /// ## --- Day 2: 1202 Program Alarm ---
 ///
@@ -97,14 +95,12 @@ use crate::intcode::IntCode;
 /// program_, replace position `1` with the value `12` and replace position `2`
 /// with the value `2`. _What value is left at position `0`_ after the program
 /// halts?
-pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
-    let mut intcode = IntCode::new(input)?;
-    intcode.write_mem(1, 12).unwrap();
-    intcode.write_mem(2, 2).unwrap();
-    intcode.run()?;
-    println!("{}", intcode.read_mem(0).unwrap());
-
-    Ok(())
+pub fn q1(input: String, _args: &[String]) -> DynResult<isize> {
+    let mut intcode = Intcode::new(input)?;
+    intcode.write_mem(1, 12)?;
+    intcode.write_mem(2, 2)?;
+    intcode.run_headless()?;
+    Ok(intcode.read_mem(0)?)
 }
 
 /// ## --- Part Two ---
@@ -156,23 +152,22 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 /// Find the input _noun_ and _verb_ that cause the program to produce the
 /// output `19690720`. _What is `100 * noun + verb`?_ (For example, if `noun=12`
 /// and `verb=2`, the answer would be `1202`.)
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<isize> {
     // standard, non-multithreaded implementation
-    let mut intcode = IntCode::new(input)?;
-    let len = intcode.mem_len();
+    let mut intcode = Intcode::new(input)?;
+    let len = intcode.mem_len() as isize;
     for noun in 0..len {
         for verb in 0..len {
             intcode.reset();
-            intcode.write_mem(1, noun as isize).unwrap();
-            intcode.write_mem(2, verb as isize).unwrap();
-            intcode.run()?;
-            let res = intcode.read_mem(0).unwrap();
+            intcode.write_mem(1, noun)?;
+            intcode.write_mem(2, verb)?;
+            intcode.run_headless()?;
+            let res = intcode.read_mem(0)?;
             if res == 19690720 {
-                println!("{}", 100 * noun + verb);
-                return Ok(());
+                return Ok(100 * noun + verb);
             }
         }
     }
 
-    Ok(())
+    Err("Could not find a valid (noun, verb)".into())
 }

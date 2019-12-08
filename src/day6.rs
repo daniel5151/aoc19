@@ -1,6 +1,4 @@
-use std::collections::{HashMap, HashSet, VecDeque};
-
-use crate::DynResult;
+use crate::prelude::*;
 
 macro_rules! munge_input {
     ($input:ident) => {{
@@ -92,7 +90,7 @@ macro_rules! munge_input {
 /// The total number of direct and indirect orbits in this example is `_42_`.
 ///
 /// _What is the total number of direct and indirect orbits_ in your map data?
-pub fn q1(input: String, args: &[String]) -> DynResult<()> {
+pub fn q1(input: String, args: &[String]) -> DynResult<usize> {
     let input = munge_input!(input);
 
     let mut orbits: HashMap<&str, HashSet<&str>> = HashMap::new();
@@ -117,9 +115,7 @@ pub fn q1(input: String, args: &[String]) -> DynResult<()> {
         }
     };
 
-    println!("{}", checksum);
-
-    Ok(())
+    Ok(checksum)
 }
 
 fn checksum(orbits: &HashMap<&str, HashSet<&str>>, root: &str, d: usize) -> usize {
@@ -186,7 +182,7 @@ fn checksum(orbits: &HashMap<&str, HashSet<&str>>, root: &str, d: usize) -> usiz
 /// _What is the minimum number of orbital transfers required_ to move from the
 /// object `YOU` are orbiting to the object `SAN` is orbiting? (Between the
 /// objects they are orbiting - _not_ between `YOU` and `SAN`.)
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<usize> {
     let input = munge_input!(input);
 
     let mut orbits: HashMap<&str, HashSet<&str>> = HashMap::new();
@@ -200,8 +196,7 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
     q.push_back(("YOU", "", 0));
     while let Some((planet, parent, hops)) = q.pop_front() {
         if planet == "SAN" {
-            println!("{}", hops - 2); // YOU and SAN don't count
-            return Ok(());
+            return Ok(hops - 2); // YOU and SAN don't count
         }
 
         q.extend(
@@ -212,6 +207,5 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
         );
     }
 
-    println!("Couldn't find route from YOU to SAN");
-    Ok(())
+    Err("Couldn't find route from YOU to SAN".into())
 }

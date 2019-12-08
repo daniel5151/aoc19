@@ -1,4 +1,4 @@
-use crate::DynResult;
+use crate::prelude::*;
 
 fn req_fuel(mass: usize) -> usize {
     (mass / 3).saturating_sub(2)
@@ -38,15 +38,11 @@ fn req_fuel(mass: usize) -> usize {
 ///
 /// _What is the sum of the fuel requirements_ for all of the modules on your
 /// spacecraft?
-pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
-    let answer = input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
+pub fn q1(input: String, _args: &[String]) -> DynResult<usize> {
+    input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
         let mass = ln.parse::<usize>()?;
         Ok(a + req_fuel(mass))
-    })?;
-
-    println!("{:?}", answer);
-
-    Ok(())
+    })
 }
 
 fn fuel_fuel(fuel: usize) -> usize {
@@ -89,15 +85,11 @@ fn fuel_fuel(fuel: usize) -> usize {
 /// spacecraft when also taking into account the mass of the added fuel?
 /// (Calculate the fuel requirements for each module separately, then add them
 /// all up at the end.)
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
-    let answer = input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<usize> {
+    input.split('\n').try_fold(0, |a, ln| -> DynResult<_> {
         let mass = ln.parse::<usize>()?;
         let fuel = req_fuel(mass);
 
         Ok(a + fuel_fuel(fuel))
-    })?;
-
-    println!("{:?}", answer);
-
-    Ok(())
+    })
 }

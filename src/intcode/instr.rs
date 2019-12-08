@@ -1,5 +1,5 @@
 use super::error::{Error, Result};
-use super::IsizeIntCodeExt;
+use super::IsizeIntcodeExt;
 
 #[derive(Debug)]
 pub enum Instruction {

@@ -1,6 +1,4 @@
-use crate::DynResult;
-
-use crate::intcode::IntCode;
+use crate::prelude::*;
 
 /// ## --- Day 5: Sunny with a Chance of Asteroids ---
 ///
@@ -100,11 +98,10 @@ use crate::intcode::IntCode;
 ///
 /// After providing `1` to the only input instruction and passing all the tests,
 /// _what diagnostic code does the program produce?_
-pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
-    let mut intcode = IntCode::new(input)?;
-    intcode.reset();
-    intcode.run_with_input("1".as_ref())?;
-    Ok(())
+pub fn q1(input: String, _args: &[String]) -> DynResult<String> {
+    let mut intcode = Intcode::new(input)?;
+    intcode.run_to_completion(vec![1])?;
+    Ok(format!("{:?}", intcode.output()))
 }
 
 /// ## --- Part Two ---
@@ -178,9 +175,8 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 /// number, the _diagnostic code_.
 ///
 /// _What is the diagnostic code for system ID `5`?_
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
-    let mut intcode = IntCode::new(input)?;
-    intcode.reset();
-    intcode.run_with_input("5".as_ref())?;
-    Ok(())
+pub fn q2(input: String, _args: &[String]) -> DynResult<String> {
+    let mut intcode = Intcode::new(input)?;
+    intcode.run_to_completion(vec![5])?;
+    Ok(format!("{:?}", intcode.output()))
 }

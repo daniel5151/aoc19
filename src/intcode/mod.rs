@@ -2,14 +2,14 @@ mod cpu;
 mod error;
 mod instr;
 
-pub use cpu::IntCode;
+pub use cpu::Intcode;
 pub use error::{Error, Result};
 
-pub trait IsizeIntCodeExt {
+pub trait IsizeIntcodeExt {
     fn to_addr(self) -> Result<usize>;
 }
 
-impl IsizeIntCodeExt for isize {
+impl IsizeIntcodeExt for isize {
     fn to_addr(self) -> Result<usize> {
         if self < 0 {
             Err(Error::NegativeAddr)

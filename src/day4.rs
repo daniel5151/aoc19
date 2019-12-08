@@ -1,4 +1,4 @@
-use crate::DynResult;
+use crate::prelude::*;
 
 macro_rules! munge_input {
     ($input:ident) => {{
@@ -60,7 +60,7 @@ fn has_run2(digits: &[char]) -> bool {
 ///
 /// _How many different passwords_ within the range given in your puzzle input
 /// meet these criteria?
-pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q1(input: String, _args: &[String]) -> DynResult<usize> {
     let (start, end) = munge_input!(input);
 
     let ans = (start..=end)
@@ -69,9 +69,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
         .filter(|d| ascending(&d))
         .count();
 
-    eprintln!("{:?}", ans);
-
-    Ok(())
+    Ok(ans)
 }
 
 /// ## --- Part Two ---
@@ -91,7 +89,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
 ///
 /// _How many different passwords_ within the range given in your puzzle input
 /// meet all of the criteria?
-pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
+pub fn q2(input: String, _args: &[String]) -> DynResult<usize> {
     let (start, end) = munge_input!(input);
 
     let ans = (start..=end)
@@ -101,7 +99,5 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
         .filter(|d| has_run2(&d))
         .count();
 
-    eprintln!("{:?}", ans);
-
-    Ok(())
+    Ok(ans)
 }
