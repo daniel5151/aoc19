@@ -8,6 +8,7 @@ pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub mod prelude {
     // useful stdlib stuff
     pub use std::collections::*;
+    pub use std::io::prelude::*;
 
     // useful external libraries
     pub use itertools::Itertools;
@@ -48,6 +49,7 @@ days! {
     day6,
     day7,
     day8,
+    day9,
 }
 
 fn main() -> DynResult<()> {

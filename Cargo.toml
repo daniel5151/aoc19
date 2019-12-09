@@ -6,3 +6,10 @@ edition = "2018"
 
 [dependencies]
 itertools = "0.8.2"
+
+[profile.dev]
+codegen-units = 4
+incremental = true
+lto = false
+opt-level = 1
+panic = 'unwind'

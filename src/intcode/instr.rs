@@ -16,10 +16,11 @@ pub enum Instruction {
     Cmp(usize, usize, usize),
     Eq(usize, usize, usize),
     Mul(usize, usize, usize),
+    AdjBase(usize),
 }
 
 impl Instruction {
-    pub fn decode(pc: usize, mem: &[isize]) -> Result<(Instruction, usize)> {
+    pub fn decode(pc: usize, mem: &[isize], base: isize) -> Result<(Instruction, usize)> {
         let instr = mem[pc];
         let instr = if instr < 0 {
             return Err(Error::NegativeInstr);
@@ -35,6 +36,7 @@ impl Instruction {
             let addr = match addr_mode {
                 0 => mem[pc + i].to_addr(),
                 1 => Ok(pc + i),
+                2 => (base + mem[pc + i]).to_addr(),
                 m => Err(Error::InvalidAddrMode(m)),
             };
             instr_len += 1;
@@ -52,6 +54,7 @@ impl Instruction {
             6 => Jz(next_addr()?, next_addr()?),
             7 => Cmp(next_addr()?, next_addr()?, next_addr()?),
             8 => Eq(next_addr()?, next_addr()?, next_addr()?),
+            9 => AdjBase(next_addr()?),
             99 => Halt,
             o => return Err(Error::InvalidOpcode(o)),
         };

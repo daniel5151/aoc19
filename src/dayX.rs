@@ -3,7 +3,6 @@ use crate::prelude::*;
 macro_rules! munge_input {
     ($input:ident) => {{
         let input = &$input;
-        // do things
         input.split('\n')
     }};
 }
@@ -22,4 +21,16 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
     let _ = input;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn q1_e1() {
+        let input = "...";
+        let output = q1(input.to_string(), &[]).unwrap();
+        assert_eq!(output, ());
+    }
 }

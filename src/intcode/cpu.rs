@@ -12,6 +12,8 @@ pub struct Intcode {
 
     mem: Vec<isize>,
     pc: usize,
+
+    base: isize,
 }
 
 impl Intcode {
@@ -19,16 +21,19 @@ impl Intcode {
     /// returning an error if the string is malformed.
     pub fn new(input: impl AsRef<str>) -> Result<Intcode> {
         let input = input.as_ref();
-        let mem = input
+        let mut mem = input
             .split(',')
             .map(|s| s.trim().parse::<isize>())
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(|_| Error::ParseMem)?;
 
+        mem.resize(10000, 0);
+
         Ok(Intcode {
             reset_mem: mem.clone(),
             mem,
             pc: 0,
+            base: 0,
         })
     }
 
@@ -146,7 +151,7 @@ impl Intcode {
         mut input_fn: impl FnMut() -> DynResult<isize>,
         mut output_fn: impl FnMut(isize) -> DynResult<()>,
     ) -> Result<(bool)> {
-        let (instr, instr_len) = Instruction::decode(self.pc, &self.mem)?;
+        let (instr, instr_len) = Instruction::decode(self.pc, &self.mem, self.base)?;
         self.pc += instr_len;
 
         use Instruction::*;
@@ -171,6 +176,7 @@ impl Intcode {
             Cmp(a, b, dst) => self.mem[dst] = (self.mem[a] < self.mem[b]) as isize,
             Eq(a, b, dst) => self.mem[dst] = (self.mem[a] == self.mem[b]) as isize,
             Mul(a, b, dst) => self.mem[dst] = self.mem[a] * self.mem[b],
+            AdjBase(v) => self.base += self.mem[v],
         }
 
         Ok(true)
