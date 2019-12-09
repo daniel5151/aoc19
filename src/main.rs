@@ -1,7 +1,5 @@
 #![allow(clippy::unreadable_literal)]
 
-pub mod intcode;
-
 /// Catch-all error type (works with anything that implements std::error::Error)
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -14,8 +12,8 @@ pub mod prelude {
     pub use itertools::Itertools;
 
     // useful AOC things
-    pub use crate::intcode::Intcode;
     pub use crate::DynResult;
+    pub use intcode::Intcode;
 }
 
 // Utulity macro to make adding new days a breeze

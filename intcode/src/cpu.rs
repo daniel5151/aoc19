@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
-
-use crate::DynResult;
+use std::error::Error as StdError;
+use std::result::Result as StdResult;
 
 use super::error::{Error, Result};
 use super::mem::Mem;
-use super::IsizeIntcodeExt;
 
 /// An Intcode interpreter.
 #[derive(Debug, Clone)]
@@ -173,9 +172,9 @@ impl Intcode {
     /// returning `false` is the machine is halted.
     pub fn step(
         &mut self,
-        mut input_fn: impl FnMut() -> DynResult<isize>,
-        mut output_fn: impl FnMut(isize) -> DynResult<()>,
-    ) -> Result<(bool)> {
+        input_fn: impl FnOnce() -> StdResult<isize, Box<dyn StdError>>,
+        output_fn: impl FnOnce(isize) -> StdResult<(), Box<dyn StdError>>,
+    ) -> Result<bool> {
         use Instruction::*;
         match self.fetch_decode()? {
             Add_(a, b, dst) => self.mem.write(dst, a + b),
@@ -214,4 +213,18 @@ pub enum Instruction {
     Eq__(isize, isize, usize),
     Setb(isize),
     Halt,
+}
+
+trait IsizeIntcodeExt {
+    fn to_addr(self) -> Result<usize>;
+}
+
+impl IsizeIntcodeExt for isize {
+    fn to_addr(self) -> Result<usize> {
+        if self < 0 {
+            Err(Error::NegativeAddr)
+        } else {
+            Ok(self.abs() as usize)
+        }
+    }
 }
