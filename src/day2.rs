@@ -97,10 +97,10 @@ use crate::prelude::*;
 /// halts?
 pub fn q1(input: String, _args: &[String]) -> DynResult<isize> {
     let mut intcode = Intcode::new(input)?;
-    intcode.write_mem(1, 12)?;
-    intcode.write_mem(2, 2)?;
+    intcode.mem().write(1, 12);
+    intcode.mem().write(2, 2);
     intcode.run_headless()?;
-    Ok(intcode.read_mem(0)?)
+    Ok(intcode.mem().read(0))
 }
 
 /// ## --- Part Two ---
@@ -155,14 +155,14 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<isize> {
 pub fn q2(input: String, _args: &[String]) -> DynResult<isize> {
     // standard, non-multithreaded implementation
     let mut intcode = Intcode::new(input)?;
-    let len = intcode.mem_len() as isize;
+    let len = intcode.mem().len() as isize;
     for noun in 0..len {
         for verb in 0..len {
             intcode.reset();
-            intcode.write_mem(1, noun)?;
-            intcode.write_mem(2, verb)?;
+            intcode.mem().write(1, noun);
+            intcode.mem().write(2, verb);
             intcode.run_headless()?;
-            let res = intcode.read_mem(0)?;
+            let res = intcode.mem().read(0);
             if res == 19690720 {
                 return Ok(100 * noun + verb);
             }

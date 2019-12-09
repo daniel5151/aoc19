@@ -7,8 +7,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     InputError(Box<dyn StdError>),
     OutputError(Box<dyn StdError>),
-    OobRead,
-    OobWrite,
     InvalidAddrMode(usize),
     InvalidOpcode(usize),
     NegativeAddr,
@@ -27,8 +25,6 @@ impl Display for Error {
             NegativeAddr => write!(f, "Cannot address negative address"),
             NegativeInstr => write!(f, "Cannot execute negative instruction"),
             ParseMem => write!(f, "Failed to parse initial memory string"),
-            OobRead => write!(f, "Attempted to read from an address that's out of bounds"),
-            OobWrite => write!(f, "Attempted to write to an address that's out of bounds"),
         }
     }
 }

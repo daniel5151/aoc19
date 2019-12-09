@@ -3,35 +3,23 @@ use std::collections::VecDeque;
 use crate::DynResult;
 
 use super::error::{Error, Result};
-use super::instr::Instruction;
+use super::mem::Mem;
 use super::IsizeIntcodeExt;
 
+/// An Intcode interpreter.
 #[derive(Debug, Clone)]
 pub struct Intcode {
-    reset_mem: Vec<isize>,
-
-    mem: Vec<isize>,
+    mem: Mem,
     pc: usize,
-
     base: isize,
 }
 
 impl Intcode {
-    /// Create a new Intcode machine, parsing the input string to intcode,
-    /// returning an error if the string is malformed.
+    /// Create a new Intcode machine.
+    /// Returns an error if the input string is malformed.
     pub fn new(input: impl AsRef<str>) -> Result<Intcode> {
-        let input = input.as_ref();
-        let mut mem = input
-            .split(',')
-            .map(|s| s.trim().parse::<isize>())
-            .collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|_| Error::ParseMem)?;
-
-        mem.resize(10000, 0);
-
         Ok(Intcode {
-            reset_mem: mem.clone(),
-            mem,
+            mem: Mem::new(input)?,
             pc: 0,
             base: 0,
         })
@@ -39,28 +27,14 @@ impl Intcode {
 
     /// Reset the intcode machine to it's initial state
     pub fn reset(&mut self) {
-        self.mem.copy_from_slice(&self.reset_mem);
+        self.mem.reset();
         self.pc = 0;
+        self.base = 0;
     }
 
-    /// Return the intcode machine's memory length
-    pub fn mem_len(&self) -> usize {
-        self.mem.len()
-    }
-
-    /// Read the integer at `addr`, retuning an error if the address is
-    /// out-of-bounds
-    pub fn read_mem(&self, addr: usize) -> Result<isize> {
-        self.mem.get(addr).copied().ok_or(Error::OobRead)
-    }
-
-    /// Write the integer `val` to `addr`, returning an error if the address is
-    /// out of bounds.
-    pub fn write_mem(&mut self, addr: usize, val: isize) -> Result<()> {
-        self.mem
-            .get_mut(addr)
-            .map(|x| *x = val)
-            .ok_or(Error::OobWrite)
+    /// Return a mutable reference to the intcode machine's memory
+    pub fn mem(&mut self) -> &mut Mem {
+        &mut self.mem
     }
 
     /// Run the intcode interpreter without performing any I/O,
@@ -144,6 +118,57 @@ impl Intcode {
         }
     }
 
+    /// Fetches and decodes the next instruction, updating `self.pc` accordingly
+    fn fetch_decode(&mut self) -> Result<Instruction> {
+        let instr = self.mem.read(self.pc);
+        let instr = if instr < 0 {
+            return Err(Error::NegativeInstr);
+        } else {
+            self.mem.read(self.pc).abs() as usize
+        };
+
+        let mut instr_len = 1;
+        // Return the memory address of the next argument
+        let mut arg = || {
+            let addr_mode = (instr / 100) / (10_usize.pow((instr_len - 1) as u32)) % 10;
+            let addr = match addr_mode {
+                0 => (self.mem.read(self.pc + instr_len)).to_addr()?,
+                1 => self.pc + instr_len,
+                2 => (self.mem.read(self.pc + instr_len) + self.base).to_addr()?,
+                m => return Err(Error::InvalidAddrMode(m)),
+            };
+            instr_len += 1;
+            Ok(addr)
+        };
+
+        #[rustfmt::skip]
+        macro_rules! a {
+            (addr) => { arg()? };
+            (_int) => { self.mem.read(arg()?) };
+            (uint) => { self.mem.read(arg()?).to_addr()? };
+        }
+
+        use Instruction::*;
+        let opcode = instr % 100;
+        let instr = match opcode {
+            1 => Add_(a!(_int), a!(_int), a!(addr)),
+            2 => Mul_(a!(_int), a!(_int), a!(addr)),
+            3 => Geti(a!(addr)),
+            4 => Puti(a!(addr)),
+            5 => Jnz_(a!(_int), a!(uint)),
+            6 => Jz__(a!(_int), a!(uint)),
+            7 => Cmp_(a!(_int), a!(_int), a!(addr)),
+            8 => Eq__(a!(_int), a!(_int), a!(addr)),
+            9 => Setb(a!(_int)),
+            99 => Halt,
+            o => return Err(Error::InvalidOpcode(o)),
+        };
+
+        self.pc += instr_len;
+
+        Ok(instr)
+    }
+
     /// Step the intcode interpreter using custom input/output functions,
     /// returning `false` is the machine is halted.
     pub fn step(
@@ -151,34 +176,42 @@ impl Intcode {
         mut input_fn: impl FnMut() -> DynResult<isize>,
         mut output_fn: impl FnMut(isize) -> DynResult<()>,
     ) -> Result<(bool)> {
-        let (instr, instr_len) = Instruction::decode(self.pc, &self.mem, self.base)?;
-        self.pc += instr_len;
-
         use Instruction::*;
-        match instr {
+        match self.fetch_decode()? {
+            Add_(a, b, dst) => self.mem.write(dst, a + b),
+            Mul_(a, b, dst) => self.mem.write(dst, a * b),
+            Geti(dst) => self.mem.write(dst, input_fn().map_err(Error::InputError)?),
+            Puti(src) => output_fn(self.mem.read(src)).map_err(Error::OutputError)?,
+            Jnz_(v, new_pc) => {
+                if v != 0 {
+                    self.pc = new_pc
+                }
+            }
+            Jz__(v, new_pc) => {
+                if v == 0 {
+                    self.pc = new_pc
+                }
+            }
+            Cmp_(a, b, dst) => self.mem.write(dst, (a < b) as isize),
+            Eq__(a, b, dst) => self.mem.write(dst, (a == b) as isize),
+            Setb(b) => self.base += b,
             Halt => return Ok(false),
-            // 1 arg
-            ReadInt(dst) => self.mem[dst] = input_fn().map_err(Error::InputError)?,
-            WriteInt(src) => output_fn(self.mem[src]).map_err(Error::OutputError)?,
-            // 2 arg
-            Jnz(v, pc) => {
-                if self.mem[v] != 0 {
-                    self.pc = self.mem[pc].to_addr()?
-                }
-            }
-            Jz(v, pc) => {
-                if self.mem[v] == 0 {
-                    self.pc = self.mem[pc].to_addr()?;
-                }
-            }
-            // 3 arg
-            Add(a, b, dst) => self.mem[dst] = self.mem[a] + self.mem[b],
-            Cmp(a, b, dst) => self.mem[dst] = (self.mem[a] < self.mem[b]) as isize,
-            Eq(a, b, dst) => self.mem[dst] = (self.mem[a] == self.mem[b]) as isize,
-            Mul(a, b, dst) => self.mem[dst] = self.mem[a] * self.mem[b],
-            AdjBase(v) => self.base += self.mem[v],
         }
 
         Ok(true)
     }
+}
+
+#[derive(Debug)]
+pub enum Instruction {
+    Add_(isize, isize, usize),
+    Mul_(isize, isize, usize),
+    Geti(usize),
+    Puti(usize),
+    Jnz_(isize, usize),
+    Jz__(isize, usize),
+    Cmp_(isize, isize, usize),
+    Eq__(isize, isize, usize),
+    Setb(isize),
+    Halt,
 }
