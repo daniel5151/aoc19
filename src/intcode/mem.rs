@@ -1,12 +1,17 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use super::{Error, Result};
 
 /// An Intcode machine memory module.
+///
+/// Uses a fixed-size Vec to store the base intcode program ("low memory"), with
+/// a HashMap for any spill-over ("high memory")
 #[derive(Debug, Clone)]
 pub struct Mem {
     orig_mem: Vec<isize>,
-    mem: RefCell<Vec<isize>>,
+    lo_mem: Vec<isize>,
+    hi_mem: RefCell<HashMap<usize, isize>>,
 }
 
 impl Mem {
@@ -22,43 +27,38 @@ impl Mem {
 
         Ok(Mem {
             orig_mem: mem.clone(),
-            mem: RefCell::new(mem),
+            lo_mem: mem,
+            hi_mem: RefCell::new(HashMap::new()),
         })
     }
 
     /// Resets memory back to it's initial state
     pub fn reset(&mut self) {
-        let mem = self.mem.get_mut();
-        *mem = self.orig_mem.clone();
+        self.lo_mem.copy_from_slice(&self.orig_mem);
+        self.hi_mem.get_mut().clear();
     }
 
-    /// Returns the current memory length
-    pub fn len(&self) -> usize {
-        self.mem.borrow().len()
+    /// Returns the length of the initial intcode program
+    pub fn base_len(&self) -> usize {
+        self.orig_mem.len()
     }
 
     /// Read the integer at `addr`, silently growing memory if the addr hasn't
     /// been initialized yet.
     pub fn read(&self, addr: usize) -> isize {
-        let mut mem = self.mem.borrow_mut();
-        match mem.get(addr) {
+        match self.lo_mem.get(addr) {
             Some(v) => *v,
-            None => {
-                mem.resize(addr + 1, 0);
-                mem[addr]
-            }
+            None => *self.hi_mem.borrow_mut().entry(addr).or_default(),
         }
     }
 
     /// Write the integer `val` to `addr`, silently growing memory if the addr
     /// hasn't been initialized yet.
     pub fn write(&mut self, addr: usize, val: isize) {
-        let mem = self.mem.get_mut();
-        match mem.get_mut(addr) {
+        match self.lo_mem.get_mut(addr) {
             Some(v) => *v = val,
             None => {
-                mem.resize(addr + 1, 0);
-                mem[addr] = val;
+                self.hi_mem.borrow_mut().insert(addr, val);
             }
         }
     }

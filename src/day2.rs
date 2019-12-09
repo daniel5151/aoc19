@@ -153,9 +153,8 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<isize> {
 /// output `19690720`. _What is `100 * noun + verb`?_ (For example, if `noun=12`
 /// and `verb=2`, the answer would be `1202`.)
 pub fn q2(input: String, _args: &[String]) -> DynResult<isize> {
-    // standard, non-multithreaded implementation
     let mut intcode = Intcode::new(input)?;
-    let len = intcode.mem().len() as isize;
+    let len = intcode.mem().base_len() as isize;
     for noun in 0..len {
         for verb in 0..len {
             intcode.reset();
