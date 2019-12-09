@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 use super::{Error, Result};
@@ -11,7 +10,7 @@ use super::{Error, Result};
 pub struct Mem {
     orig_mem: Vec<isize>,
     lo_mem: Vec<isize>,
-    hi_mem: RefCell<HashMap<usize, isize>>,
+    hi_mem: HashMap<usize, isize>,
 }
 
 impl Mem {
@@ -28,14 +27,14 @@ impl Mem {
         Ok(Mem {
             orig_mem: mem.clone(),
             lo_mem: mem,
-            hi_mem: RefCell::new(HashMap::new()),
+            hi_mem: HashMap::new(),
         })
     }
 
     /// Resets memory back to it's initial state
     pub fn reset(&mut self) {
         self.lo_mem.copy_from_slice(&self.orig_mem);
-        self.hi_mem.get_mut().clear();
+        self.hi_mem.clear();
     }
 
     /// Returns the length of the initial intcode program
@@ -45,10 +44,10 @@ impl Mem {
 
     /// Read the integer at `addr`, silently growing memory if the addr hasn't
     /// been initialized yet.
-    pub fn read(&self, addr: usize) -> isize {
+    pub fn read(&mut self, addr: usize) -> isize {
         match self.lo_mem.get(addr) {
             Some(v) => *v,
-            None => *self.hi_mem.borrow_mut().entry(addr).or_default(),
+            None => *self.hi_mem.entry(addr).or_default(),
         }
     }
 
@@ -58,7 +57,7 @@ impl Mem {
         match self.lo_mem.get_mut(addr) {
             Some(v) => *v = val,
             None => {
-                self.hi_mem.borrow_mut().insert(addr, val);
+                self.hi_mem.insert(addr, val);
             }
         }
     }

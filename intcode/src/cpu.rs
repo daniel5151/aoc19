@@ -9,6 +9,7 @@ use super::mem::Mem;
 #[derive(Debug, Clone)]
 pub struct Intcode {
     mem: Mem,
+    instr: usize,
     pc: usize,
     base: isize,
 }
@@ -19,6 +20,7 @@ impl Intcode {
     pub fn new(input: impl AsRef<str>) -> Result<Intcode> {
         Ok(Intcode {
             mem: Mem::new(input)?,
+            instr: 0,
             pc: 0,
             base: 0,
         })
@@ -27,6 +29,7 @@ impl Intcode {
     /// Reset the intcode machine to it's initial state
     pub fn reset(&mut self) {
         self.mem.reset();
+        self.instr = 0;
         self.pc = 0;
         self.base = 0;
     }
@@ -117,53 +120,56 @@ impl Intcode {
         }
     }
 
+    /// Return the next argument, taking into account it's addressing mode, and
+    /// incrementing `self.pc` by 1.
+    fn fetch_arg(&mut self) -> Result<usize> {
+        let addr_mode = self.instr % 10;
+        self.instr /= 10;
+        let addr = match addr_mode {
+            0 => (self.mem.read(self.pc)).to_addr()?,
+            1 => self.pc,
+            2 => (self.mem.read(self.pc) + self.base).to_addr()?,
+            m => return Err(Error::InvalidAddrMode(m)),
+        };
+        self.pc += 1;
+        Ok(addr)
+    }
+
     /// Fetches and decodes the next instruction, updating `self.pc` accordingly
-    fn fetch_decode(&mut self) -> Result<Instruction> {
-        let instr = self.mem.read(self.pc);
-        let instr = if instr < 0 {
-            return Err(Error::NegativeInstr);
-        } else {
-            self.mem.read(self.pc).abs() as usize
-        };
+    fn fetch_decode_instr(&mut self) -> Result<Instruction> {
+        // load next instruction into the instr register
+        self.instr = self.mem.read(self.pc).to_raw_instr()?;
+        self.pc += 1;
 
-        let mut instr_len = 1;
-        // Return the memory address of the next argument
-        let mut arg = || {
-            let addr_mode = (instr / 100) / (10_usize.pow((instr_len - 1) as u32)) % 10;
-            let addr = match addr_mode {
-                0 => (self.mem.read(self.pc + instr_len)).to_addr()?,
-                1 => self.pc + instr_len,
-                2 => (self.mem.read(self.pc + instr_len) + self.base).to_addr()?,
-                m => return Err(Error::InvalidAddrMode(m)),
-            };
-            instr_len += 1;
-            Ok(addr)
-        };
+        // extract opcode
+        let opcode = self.instr % 100;
+        self.instr /= 100;
 
+        // helper macro to fetch a typed argument
         #[rustfmt::skip]
         macro_rules! a {
-            (addr) => { arg()? };
-            (_int) => { self.mem.read(arg()?) };
-            (uint) => { self.mem.read(arg()?).to_addr()? };
+            // A reference to the specified memory location
+            (ptr) => {{ self.fetch_arg()? }};
+            // A signed immediate value
+            (imm_i) => {{ let arg = self.fetch_arg()?; self.mem.read(arg) }};
+            // A unsigned immediate value
+            (imm_u) => {{ let arg = self.fetch_arg()?; self.mem.read(arg).to_addr()? }};
         }
 
         use Instruction::*;
-        let opcode = instr % 100;
         let instr = match opcode {
-            1 => Add_(a!(_int), a!(_int), a!(addr)),
-            2 => Mul_(a!(_int), a!(_int), a!(addr)),
-            3 => Geti(a!(addr)),
-            4 => Puti(a!(addr)),
-            5 => Jnz_(a!(_int), a!(uint)),
-            6 => Jz__(a!(_int), a!(uint)),
-            7 => Cmp_(a!(_int), a!(_int), a!(addr)),
-            8 => Eq__(a!(_int), a!(_int), a!(addr)),
-            9 => Setb(a!(_int)),
+            1 => Add_(a!(imm_i), a!(imm_i), a!(ptr)),
+            2 => Mul_(a!(imm_i), a!(imm_i), a!(ptr)),
+            3 => Geti(a!(ptr)),
+            4 => Puti(a!(ptr)),
+            5 => Jnz_(a!(imm_i), a!(imm_u)),
+            6 => Jz__(a!(imm_i), a!(imm_u)),
+            7 => Cmp_(a!(imm_i), a!(imm_i), a!(ptr)),
+            8 => Eq__(a!(imm_i), a!(imm_i), a!(ptr)),
+            9 => Setb(a!(imm_i)),
             99 => Halt,
             o => return Err(Error::InvalidOpcode(o)),
         };
-
-        self.pc += instr_len;
 
         Ok(instr)
     }
@@ -176,7 +182,7 @@ impl Intcode {
         output_fn: impl FnOnce(isize) -> StdResult<(), Box<dyn StdError>>,
     ) -> Result<bool> {
         use Instruction::*;
-        match self.fetch_decode()? {
+        match self.fetch_decode_instr()? {
             Add_(a, b, dst) => self.mem.write(dst, a + b),
             Mul_(a, b, dst) => self.mem.write(dst, a * b),
             Geti(dst) => self.mem.write(dst, input_fn().map_err(Error::InputError)?),
@@ -217,12 +223,21 @@ pub enum Instruction {
 
 trait IsizeIntcodeExt {
     fn to_addr(self) -> Result<usize>;
+    fn to_raw_instr(self) -> Result<usize>;
 }
 
 impl IsizeIntcodeExt for isize {
     fn to_addr(self) -> Result<usize> {
         if self < 0 {
             Err(Error::NegativeAddr)
+        } else {
+            Ok(self.abs() as usize)
+        }
+    }
+
+    fn to_raw_instr(self) -> Result<usize> {
+        if self < 0 {
+            Err(Error::NegativeInstr)
         } else {
             Ok(self.abs() as usize)
         }
