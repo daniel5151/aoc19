@@ -13,7 +13,7 @@ pub mod prelude {
 
     // useful AOC things
     pub use crate::DynResult;
-    pub use intcode::Intcode;
+    pub use intcode::{self, Intcode};
 }
 
 // Utulity macro to make adding new days a breeze

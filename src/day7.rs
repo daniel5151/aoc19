@@ -95,7 +95,7 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<(isize, Vec<isize>)> {
             input.push(phase);
             input.push(prev_out);
 
-            intcode.run_to_completion(&mut input, &mut output)?;
+            intcode::run::to_completion(&mut intcode, &mut input, &mut output)?;
             prev_out = output.pop().ok_or("expected single intcode output")?;
 
             if !input.is_empty() {
@@ -202,7 +202,7 @@ pub fn q2(input: String, args: &[String]) -> DynResult<(isize, Vec<isize>)> {
         'outer: loop {
             for (amp, input) in &mut amps {
                 input.push_back(out);
-                match amp.run_until_output(input)? {
+                match intcode::run::until_output(amp, input)? {
                     Some(output) => out = output,
                     None => {
                         // it didn't need the last input
