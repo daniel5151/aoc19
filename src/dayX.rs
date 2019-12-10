@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn q1_e1() {
         let input = "...";
-        let output = q1(input.to_string(), &[]).unwrap();
-        assert_eq!(output, ());
+        let output = q1(input.to_string(), &[]);
+        assert_eq!(output.unwrap(), ());
     }
 }
