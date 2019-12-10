@@ -83,10 +83,9 @@ pub fn q1(input: String, _args: &[String]) -> DynResult<(usize, (isize, isize))>
 }
 
 pub fn q2(input: String, _args: &[String]) -> DynResult<isize> {
-    let ((rows, cols), asteroids) = munge_input!(input);
+    let (_, asteroids) = munge_input!(input);
 
     let (sx, sy) = q1(input.clone(), &[])?.1;
-    println!("with {:?}", (sx, sy));
 
     // convert coordinates to cartesian plane centered on the station
     let asteroids = asteroids
@@ -94,17 +93,49 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<isize> {
         .map(|(x, y)| (x - sx, -(y - sy)))
         .collect::<BTreeSet<_>>();
 
-    // sort coordinates by
+    let mut order: BTreeMap<usize, BTreeMap<isize, (isize, isize)>> = BTreeMap::new();
 
-    println!("{:?}", asteroids);
-
-    let mut order = BTreeSet::new();
     for (x, y) in asteroids {
         use std::f32::consts::PI;
-        let angle = (y as f32).atan2(x as f32); //+ PI;
-        let magnitude = (sx - x).pow(2) + (sy - y).pow(2);
+        let mut angle = (y as f32).atan2(x as f32);
+        if angle < 0. {
+            angle += 2. * PI;
+        }
+        // order angles so that 0 = pi/2
+        angle -= PI / 2.;
+        if angle < 0. {
+            angle += 2. * PI;
+        }
+        // and make the direction counter-clockwise
+        angle = -angle;
 
-        order.insert(((angle * magnitude as f32 * 10000.) as isize, (x, y)));
+        let magnitude = x.pow(2) + y.pow(2);
+
+        order
+            .entry((angle * 10000000.) as usize)
+            .or_default()
+            .insert(magnitude, (x + sx, -(y - sy)));
+    }
+
+    let mut count = 0;
+    while !order.is_empty() {
+        let mut cleanup = Vec::new();
+
+        for (&angle, asteroids) in order.iter_mut() {
+            match asteroids.iter().next() {
+                Some((&k, (x, y))) => {
+                    count += 1;
+                    if count == 200 {
+                        return Ok(x * 100 + y);
+                    }
+                    asteroids.remove(&k);
+                }
+                None => cleanup.push(angle),
+            }
+        }
+        for a in cleanup {
+            order.remove(&a);
+        }
     }
 
     println!("{:?}", order);
