@@ -15,6 +15,16 @@ Some non-goals:
 
 ## Running
 
+(Assuming that the desired day's input has already been downloaded)
+
+```bash
+cargo run --release --features extras -- <day> <question>
+```
+
+The `"extras"` feature enables several cool-but-slow-to-compile answers to certain questions (e.g: a multithreaded day7 q2).
+
+## Running (for speed)
+
 ```bash
 ./aoc19.sh <day> <question>
 # e.g: ./aoc19 3 1
