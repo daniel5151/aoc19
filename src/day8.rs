@@ -50,7 +50,7 @@ pub fn q2(input: String, _args: &[String]) -> DynResult<()> {
         .collect::<Vec<_>>()
         .join("\n");
 
-    eprintln!("{}", ans);
+    println!("{}", ans);
 
     Ok(())
 }

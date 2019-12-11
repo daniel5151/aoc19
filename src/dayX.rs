@@ -1,10 +1,22 @@
 use crate::prelude::*;
 
-// pub fn q1(input: String, _args: &[String]) -> DynResult<Vec<isize>> {
-//     let mut intcode = Intcode::new(input)?;
-//     let mut output = Vec::new();
-//     intcode::run::to_completion(&mut intcode, &mut vec![1], &mut output)?;
-//     Ok(output)
+// pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+//     let intcode = &mut Intcode::new(input)?;
+//     let input = &mut vec![];
+//     let output = &mut vec![];
+//     intcode::run::to_completion(intcode, &mut input, output)?;
+//     Ok(())
+// }
+
+// pub fn q1(input: String, _args: &[String]) -> DynResult<()> {
+//     let intcode =  &mut Intcode::new(input)?;
+//     let input = &mut VecDeque::new();
+//     input.push_back(0);
+//     while let Some(output) = intcode::run::until_output(intcode, input)? {
+//         eprintln!("{:?}", output);
+//         // ...
+//     }
+//     Ok(())
 // }
 
 macro_rules! munge_input {
