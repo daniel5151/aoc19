@@ -1,33 +1,40 @@
 use crate::prelude::*;
 
+// Taking a page out of game development, and using a "structure of arrays"
+// instead of an "array of structures"
 macro_rules! munge_input {
     ($input:ident) => {{
         let input = &$input;
-        input
-            .split('\n')
-            .map(|s| {
-                s.chars()
-                    .filter(|&c| !"<>xyz=".contains(c))
-                    .collect::<String>()
-            })
-            .map(|s| {
-                s.split(',')
-                    .map(|s| s.trim().parse::<i32>())
-                    .collect::<Result<Vec<_>, _>>()
-            })
-            .collect::<Result<Vec<Vec<i32>>, _>>()?
+
+        let mut pos = vec![Vec::new(); 3];
+        let mut vel = vec![Vec::new(); 3];
+
+        let lines = input.split('\n').map(|s| {
+            s.chars()
+                .filter(|&c| !"<>xyz=".contains(c))
+                .collect::<String>()
+        });
+
+        for ln in lines {
+            for (i, val) in ln.split(',').map(|s| s.trim().parse::<i32>()).enumerate() {
+                pos[i].push(val?);
+                vel[i].push(0);
+            }
+        }
+
+        (pos, vel)
     }};
 }
 
-fn iter_moons_by_component(pos: &mut Vec<Vec<i32>>, vel: &mut Vec<Vec<i32>>, d: usize) {
+fn iter_moon_component(pos: &mut [i32], vel: &mut [i32]) {
     // update velocity based on position
     for ((ia, a), (ib, b)) in pos.iter().enumerate().tuple_combinations::<(_, _)>() {
-        if a[d] > b[d] {
-            vel[ia][d] -= 1;
-            vel[ib][d] += 1;
-        } else if a[d] < b[d] {
-            vel[ia][d] += 1;
-            vel[ib][d] -= 1;
+        if a > b {
+            vel[ia] -= 1;
+            vel[ib] += 1;
+        } else if a < b {
+            vel[ia] += 1;
+            vel[ib] -= 1;
         } else {
             // no change
         }
@@ -35,13 +42,7 @@ fn iter_moons_by_component(pos: &mut Vec<Vec<i32>>, vel: &mut Vec<Vec<i32>>, d: 
 
     // update position based on velocity
     for (p, v) in pos.iter_mut().zip(vel.iter()) {
-        p[d] += v[d]
-    }
-}
-
-fn iter_moons(pos: &mut Vec<Vec<i32>>, vel: &mut Vec<Vec<i32>>) {
-    for d in 0..3 {
-        iter_moons_by_component(pos, vel, d)
+        *p += v
     }
 }
 
@@ -53,57 +54,47 @@ pub fn q1(input: String, args: &[String]) -> DynResult<i32> {
             .map_err(|_| "invalid num iters specified")?,
     };
 
-    let mut pos = munge_input!(input);
-    let mut vel = vec![vec![0, 0, 0]; pos.len()];
+    let (mut pos, mut vel) = munge_input!(input);
 
-    for _step in 0..iters {
-        iter_moons(&mut pos, &mut vel);
+    for _ in 0..iters {
+        for c in 0..3 {
+            iter_moon_component(&mut pos[c], &mut vel[c])
+        }
     }
 
-    let energy = |p: Vec<i32>| p.into_iter().map(|v| v.abs()).sum::<i32>();
-    let total_energy = pos
-        .into_iter()
-        .zip(vel.into_iter())
-        .map(|(pos, vel)| energy(pos) * energy(vel))
+    let count = pos.get(0).map(|v| v.len()).unwrap_or(0);
+
+    let total_energy = (0..count)
+        .map(|i| {
+            let pos_e = pos[0][i].abs() + pos[1][i].abs() + pos[2][i].abs();
+            let vel_e = vel[0][i].abs() + vel[1][i].abs() + vel[2][i].abs();
+            pos_e * vel_e
+        })
         .sum::<i32>();
 
     Ok(total_energy)
 }
 
-fn calc_hash<T: std::hash::Hash>(t: &T) -> u64 {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::Hasher;
-
-    let mut s = DefaultHasher::new();
-    t.hash(&mut s);
-    s.finish()
-}
-
 pub fn q2(input: String, _args: &[String]) -> DynResult<usize> {
-    let mut pos = munge_input!(input);
-    let mut vel = vec![vec![0, 0, 0]; pos.len()];
+    let (mut pos, mut vel) = munge_input!(input);
 
-    let mut component_cycles = Vec::new();
+    let mut iters = vec![0; 3];
 
-    for d in 0..3 {
+    for (c, iter) in iters.iter_mut().enumerate() {
         let mut past_states = HashSet::new();
-
-        let mut iter = 0;
         loop {
-            let hash = (calc_hash(&pos), (calc_hash(&vel)));
+            let hash = (aoc::hash(&pos[c]), (aoc::hash(&vel[c])));
             if past_states.contains(&hash) {
                 break;
             }
             past_states.insert(hash);
 
-            iter_moons_by_component(&mut pos, &mut vel, d);
-            iter += 1;
+            iter_moon_component(&mut pos[c], &mut vel[c]);
+            *iter += 1;
         }
-
-        component_cycles.push(iter as usize)
     }
 
-    let lcm = component_cycles.into_iter().fold(1, |a, x| a.lcm(x));
+    let lcm = iters.into_iter().fold(1, |a, x| a.lcm(x));
     Ok(lcm)
 }
 
