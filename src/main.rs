@@ -14,6 +14,52 @@ pub mod prelude {
     // useful AOC things
     pub use crate::DynResult;
     pub use intcode::{self, Intcode};
+
+    pub trait GcdLcm {
+        /// Find the Greatest Common Divisor between two integers
+        fn gcd(self, other: Self) -> Self;
+        /// Find the Lowest Common Multiple between two integers
+        fn lcm(self, other: Self) -> Self;
+    }
+
+    macro_rules! gcdlcm_impl {
+        ($($type:ty),*) => ($(
+            impl GcdLcm for $type {
+                fn gcd(self, other: Self) -> Self {
+                    let (mut a, mut b) = if self > other {
+                        (self, other)
+                    } else {
+                        (other, self)
+                    };
+
+                    while b != 0 {
+                        let r = a % b;
+                        a = b;
+                        b = r;
+                    }
+
+                    a
+                }
+
+                fn lcm(self, other: Self) -> Self {
+                    self * other / self.gcd(other)
+                }
+            }
+        )*)
+    }
+
+    gcdlcm_impl! { u8, u16, u32, u64, u128, usize }
+
+    pub mod aoc {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        pub fn hash<T: Hash>(t: &T) -> u64 {
+            let mut s = DefaultHasher::new();
+            t.hash(&mut s);
+            s.finish()
+        }
+    }
 }
 
 // Utulity macro to make adding new days a breeze
@@ -50,6 +96,7 @@ days! {
     day9,
     day10,
     day11,
+    day12,
 }
 
 fn main() -> DynResult<()> {
