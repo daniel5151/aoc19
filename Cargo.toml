@@ -9,7 +9,7 @@ default = []
 extras = []
 
 [dependencies]
-itertools = "0.8.2"
+itertools = "0.8"
 intcode = { path = "./intcode" }
 
 [profile.dev]
