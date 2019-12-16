@@ -1,4 +1,5 @@
 #![allow(clippy::unreadable_literal)]
+#![allow(clippy::type_complexity)]
 
 /// Catch-all error type (works with anything that implements std::error::Error)
 pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -98,6 +99,7 @@ days! {
     day11,
     day12,
     day13,
+    day14,
 }
 
 fn main() -> DynResult<()> {
